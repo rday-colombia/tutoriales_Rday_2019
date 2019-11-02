@@ -6,6 +6,3 @@ Arriba están todas las carpetas con los [tutoriales programados](https://rdayme
 
 ![](xxximagenes/logo.png)
 
-<center>
-<img src="xxximagenes/logo.png" alt="poster" width="350" height="350">
-</center>
