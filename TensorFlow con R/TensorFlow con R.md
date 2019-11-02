@@ -1,9 +1,7 @@
-# Tutoriales para el [Rday 2019](https://rdaymedellin.github.io)
+# TensorFlow en R
 
-Este repositorio está destinado para almacenar el material de los tutoriales del Rday Medellín 2019.
-
-Arriba están todas las carpetas con los [tutoriales programados](https://rdaymedellin.github.io/programa.html) en el Rday. Ingrese a cada carpeta y explore el contenido.
+Para consultar la presentación de TensorFlow con R visite [este enlace](https://rpubs.com/fhernanb/TF).
 
 <center>
-<img src="xxximagenes/logo.png" alt="poster" width="350" height="350">
+<img src="xxximagenes/logos.png" alt="poster" width="350" height="350">
 </center>
