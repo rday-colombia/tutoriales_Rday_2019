@@ -4,6 +4,8 @@ Este repositorio está destinado para almacenar el material de los tutoriales de
 
 Arriba están todas las carpetas con los [tutoriales programados](https://rdaymedellin.github.io/programa.html) en el Rday. Ingrese a cada carpeta y explore el contenido.
 
+![](xxximagenes/logo.png)
+
 <center>
 <img src="xxximagenes/logo.png" alt="poster" width="350" height="350">
 </center>
