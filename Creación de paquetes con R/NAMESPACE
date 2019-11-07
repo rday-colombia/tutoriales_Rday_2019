@@ -1,1 +1,2 @@
 export(stock_predict)
+importFrom("stats", "binomial")
