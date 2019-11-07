@@ -1,1 +1,1 @@
-La carpeta en la cual usted se encuentra sirve para que usted almacene todo el material necesario para el tutorial.
+Achivos con la presentación de universo tidyverse y un ejemplo del uso de las herramientas del tidyverse.
