@@ -1,0 +1,14 @@
+Package: StockPredictoR
+Type: Package
+Title: Predicts Stock Price Movement for Given Stock Symbol
+Version: 0.1.0
+Author: Saurav Kaushik
+Maintainer: Saurav Kaushik <sauravkaushik8@gmail.com>
+Description: This package predicts whether the stock price at tommorow's market close would be higher or lower compared to today's closing price.
+License: GPL-2
+LazyData: FLASE
+Imports:
+  quantmod,stats,xts
+Suggests:
+  knitr
+RoxygenNote: 6.0.1
