@@ -1,0 +1,3 @@
+# TensorFlow con R
+
+Para consultar la presentación del tutorial de Gráficos interactivos con con R visite [este enlace](http://rpubs.com/ousuga/graph_interactive_rday).
