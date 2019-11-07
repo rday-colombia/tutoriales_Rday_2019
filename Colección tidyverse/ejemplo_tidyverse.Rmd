@@ -1,0 +1,241 @@
+---
+title: "Tutorial del uso de las herramientas 'tidyverse'"
+author: 
+  - "Kenneth Roy Cabrera Torres"
+  - "Universidad Nacional de Colombia"
+date: "Viernes, 8 de noviembre de 2019"
+output: 
+  html_document: 
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Origen de los datos.
+
+En la página de [datos abiertos](https://datos.gov.co/) bajo el título de [Puntos de navegacion WiFi gratis en Medellín - para ubicación en el mapa](https://www.datos.gov.co/Ciencia-Tecnolog-a-e-Innovaci-n/Puntos-de-navegacion-WiFi-gratis-en-Medell-n-para-/kkkb-uzjh) se encuentra un listado de los sitios de wifi en Medellín.
+
+
+
+## Carga del paquete 'tydiverse'.
+
+```{r}
+library(tidyverse)
+```
+
+
+## Lectura de la base de datos (paquete readr).
+
+
+```{r}
+wifi_med <- read_csv("Puntos_de_navegacion_WiFi_gratis_en_Medell_n_-_para_ubicaci_n_en_el_mapa.csv")
+```
+
+```{r}
+wifi_med
+```
+
+## Formato 'data.frame' 
+
+```{r}
+wifi_med <- data.frame(wifi_med)
+```
+
+```{r}
+wifi_med
+```
+
+
+## Uso del paquete 'tibble'.
+
+```{r}
+wifi_med <- as_tibble(wifi_med)
+```
+
+  ## Convetir en base de datos 'adecuada' (tidyr).
+
+```{r}
+wifi_med <- wifi_med %>% separate(Punto, into = c(NA, "latitud", NA, "longitud", NA),
+                                  sep = "[\\(\\), ]")
+```
+
+## Resumen da la base de datos.
+
+```{r}
+summary(wifi_med)
+```
+
+## Transformaciòn de variables (dplyr).
+
+```{r}
+variables_f <- names(wifi_med)[1:5]
+wifi_med <- wifi_med %>% 
+  mutate_at(variables_f, factor)
+variables_n <- names(wifi_med)[6:7]
+wifi_med <- wifi_med %>% 
+  mutate_at(variables_n, as.numeric)
+```
+
+
+```{r}
+summary(wifi_med)
+```
+
+## Distribución de puntos wifi por comuna. (forecats)
+
+```{r}
+ggplot(wifi_med, aes(COMUNA)) +
+  geom_bar() +
+  labs(title = "Distribución de frecuencia de puntos wifi por comuna",
+       x = "Comuna",
+       y = "Número de puntos de wifi")
+```
+
+```{r}
+wifi_med <- wifi_med %>% 
+  mutate(COMUNA = fct_infreq(COMUNA))
+```
+
+
+```{r}
+ggplot(wifi_med, aes(COMUNA)) +
+  geom_bar() +
+  labs(title = "Distribución de frecuencia de puntos wifi por comuna",
+       x = "Comuna",
+       y = "Número de puntos de wifi")
+```
+
+
+
+## Graficación con 'ggplot'  
+
+```{r}
+colores <- c('#1b9e77','#d95f02','#7570b3',
+             '#e7298a','#66a61e','#e6ab02','#a6761d')
+ggplot(wifi_med %>% filter(!is.na(latitud) & !is.na(longitud)), 
+       aes(longitud, latitud, col = COMUNA)) +
+  geom_point() +
+  coord_fixed() +
+  scale_color_manual(values = colores) +
+  labs(title = "Distribución espacial",
+       subtitle  = "de los puntos wifi en Medellín")
+```
+
+## Extracción de subsartas (stringr)
+
+```{r}
+wifi_med <- wifi_med %>% 
+  mutate(Dirección = str_to_lower(Dirección),
+         carreras = str_extract(Dirección, "(carrera|cra)[ +][[:digit:]]+"),
+         calles = str_extract(Dirección, "(calle|clle)[ +][[:digit:]]+"),
+         carreras = as.numeric(str_extract(carreras, "[[:digit:]]+")),
+         calles = as.numeric(str_extract(calles, "[[:digit:]]+")))
+```
+
+```{r}
+ggplot(wifi_med %>% filter(!is.na(carreras) & !is.na(longitud)), 
+       aes(carreras, longitud, color = COMUNA)) +
+  geom_point() +
+  geom_smooth(method = lm)
+```
+
+```{r}
+ggplot(wifi_med %>% filter(!is.na(calles) & !is.na(latitud)), 
+       aes(calles, latitud, col = COMUNA)) +
+  geom_point() +
+  geom_smooth(method = lm)
+```
+
+## Modelos lineales simples para estimar latitud y longitud.
+
+```{r}
+mCalles <- lm(latitud ~ calles, data = wifi_med)
+summary(mCalles)
+```
+
+```{r}
+mCarreras <- lm(longitud ~ carreras, data = wifi_med)
+summary(mCarreras)
+```
+
+## Predicción de modelos para latitud y longitud a partir de calles y carreras.
+
+```{r}
+wifi_med_na_latitud <- wifi_med %>% filter(is.na(latitud) & !is.na(calles))
+wifi_med_na_latitud <- wifi_med_na_latitud %>% 
+  mutate(latitud = predict(mCalles, newdata = wifi_med_na_latitud))
+```
+
+```{r}
+wifi_med_na_longitud <- wifi_med %>% filter(is.na(longitud) & !is.na(carreras))
+wifi_med_na_longitud <- wifi_med_na_longitud %>% 
+  mutate(longitud = predict(mCarreras, newdata = wifi_med_na_longitud))
+```
+
+
+## Integración de base de datos (dplyr)
+
+```{r}
+wifi_med2 <- wifi_med %>% 
+  left_join(wifi_med_na_latitud %>% select(Nombre.del.sitio,
+                                           latitud),
+            by = "Nombre.del.sitio") %>% 
+  mutate(latitud.x = coalesce(latitud.x, latitud.y)) %>% 
+  rename(latitud = latitud.x) %>% 
+  select(-latitud.y)
+```
+
+
+```{r}
+wifi_med2 <- wifi_med2 %>% 
+  left_join(wifi_med_na_longitud %>% select(Nombre.del.sitio,
+                                           longitud),
+            by = "Nombre.del.sitio") %>% 
+  mutate(longitud.x = coalesce(longitud.x, longitud.y)) %>% 
+  rename(longitud = longitud.x) %>% 
+  select(-longitud.y)
+```
+
+```{r}
+ggplot(wifi_med2 %>% filter(!is.na(latitud) & !is.na(longitud)), 
+       aes(longitud, latitud, col = COMUNA)) +
+  geom_point() +
+  coord_fixed() +
+  labs(title = "Distribución espacial mas completa",
+       subtitle  = "de los puntos wifi en Medellín")
+```
+
+## $R^2$ de modelos individuales por comuna. (purrr)
+
+```{r}
+wifi_med %>%
+  filter(!is.na(calles) & !is.na(latitud)) %>%   
+  group_by(COMUNA) %>% 
+  mutate(n = n()) %>% 
+  filter(n > 1) %>% 
+  ungroup() %>% 
+  droplevels() %>% 
+  split(.$COMUNA) %>% 
+  map(~ lm(latitud ~ calles, data = .)) %>%
+  map(summary) %>%
+  map_dbl("r.squared")
+```
+
+```{r}
+wifi_med %>%
+  filter(!is.na(carreras) & !is.na(longitud)) %>%   
+  group_by(COMUNA) %>% 
+  mutate(n = n()) %>% 
+  filter(n > 1) %>% 
+  ungroup() %>% 
+  droplevels() %>% 
+  split(.$COMUNA) %>% 
+  map(~ lm(longitud ~ carreras, data = .)) %>%
+  map(summary) %>%
+  map_dbl("r.squared")
+```
+
+
