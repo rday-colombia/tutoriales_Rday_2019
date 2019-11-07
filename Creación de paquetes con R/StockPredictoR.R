@@ -9,8 +9,7 @@
 #' @examples  stock_predict('AAPL')
 #'
 #' @export stock_predict
-stock_predict<-function(symbol)
-{
+stock_predict<-function(symbol){
 
 #To ignore the warnings during usage
 options(warn=-1)
