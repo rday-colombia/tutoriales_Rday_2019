@@ -1,0 +1,520 @@
+---
+title: "Optimización no convencional"
+author: "Juan David Ospina Arango"
+date: "8 de noviembre de 2019"
+output: 
+  ioslides_presentation: 
+    logo: mis_figuras/logo_transparente.png
+    smaller: yes
+---
+
+<!-- Tomado de https://stackoverflow.com/questions/42690955/how-to-insert-footnotes-in-ioslides-presentations-using-rmarkdown -->
+<style>
+div.footnotes {
+  position: absolute;
+  bottom: 0;
+  margin-bottom: 60px;
+  width: 80%;
+  font-size: 0.6em;
+}
+</style>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script>
+$(document).ready(function() {
+  $('slide:not(.backdrop):not(.title-slide)').append('<div class=\"footnotes\">');
+
+  $('footnote').each(function(index) {
+    var text  = $(this).html();
+    var fnNum = (index+1).toString();
+    $(this).html(fnNum.sup());
+
+    var footnote   = fnNum + '. ' + text + '<br/>';
+    var oldContent = $(this).parents('slide').children('div.footnotes').html();
+    var newContent = oldContent + footnote;
+    $(this).parents('slide').children('div.footnotes').html(newContent);
+  });
+});
+</script>
+
+
+
+
+# Sobre mí
+
+## [Juan David Ospina Arango](https://www.linkedin.com/in/jdospina/)
+
+- Ingeniero de control (Universidad Nacional de Colombia)
+- Magíster en estadística (Universidad Nacional de Colombia)
+- Doctor en Estadística (Universidad Nacional de Colombia)
+- Doctor en procesamiento de imágenes, señales y telecomunicaciones (Universidad de Rennes 1, Francia)
+
+Actualmente trabajo en Bancolombia donde coordino la implementación de aprox. 7000 modelos para el cálculo de las provisiones de cartera y tengo a cargo el curso de Técnicas en Aprendizaje Estadístico en la Universidad Nacional de Colombia.
+
+Soy escéptico del *big data* y de la ciencia de los datos y creo que el *AutoML* es uno de los cuatro jinetes del apocalipsis.
+
+# Optimización
+
+## Optimización
+
+Optimizar es encontrar soluciones a problemas tales como gastar menos y predecir mejor. 
+
+- ¿Cuántos cajeros deben atender en un supermercado?
+- ¿Cuánto presupuesto se debe reservar para los imprevistos de un proyecto?
+- ¿Cuáles deben ser las dimensiones de una pieza mecánica para que dure más? 
+- ¿Cuál es la composición de una aleación para hacerla más resistente?
+
+## Función de costo
+La función de costo mide qué tan buena es la solución a un problema. En general representa una medida relacionada con lo que queremos mejorar:
+
+- La resistencia de un material
+- La duración de la espera en una sucursal de un banco
+- El de hacer la gira por $n$ ciudades en cierto orden
+
+## Restricciones
+Usualmente no estamos interesados en todas las soluciones, sino en algunas particulares. Por ejemplo:
+
+- La energía que se invierte debe ser finita
+- El presupuesto para el desarrollo del proyecto está acotado
+- El tiempo máximo de espera por usuario no debe sobrepasar un valor
+
+Estas consideraciones se expresan como restricciones sobre las soluciones que admitimos para el problema.
+
+
+## Optimización
+Para resolver este tipo de problemas se necesitan tres cosas:
+
+1. Codificar la solución al problema, usualmente como un vector $x$ de $p$ variables, $x \in D \subseteq \mathbb{R}^p$
+2. Definir una función de costo, $f\left(\cdot\right)$, que indique entre dos soluciones, $x_1$ y $x_2$ cual es la mejor. Por ejemplo, $x_1$ es mejor que $x_2$ si $f\left(x_1\right)<f\left(x_2\right)$
+3. Definir si la solución al problema debe cumplir con condiciones adicionales, **restricciones**, tal como pertenecer a una región $F \subseteq \mathbb{R}^p$. Esta región se puede definir mediante $n$ funciones.
+
+Así el problema de optimización puede expresarse como econtrar
+<center>
+$\displaystyle x^*=\arg \min_{x \in D \cap F} f\left(x\right)$
+</center>
+
+## Óptimos globales y locales
+
+**Óptimo global:**
+
+$x$ es un óptimo global si es mejor que cualquier otra solución
+
+
+
+**Óptimo local:**
+
+$x$ es un óptimo local si es mejor que cualquier otra solución en un vencindario de $x$
+
+## Ejemplo 1D
+
+Supongamos que queremos encontrar el mínimo de $f\left(x\right)=\left(x+1\right)^2$, para $x \in \mathbb{R}$:
+
+```{r echo=FALSE}
+x<-seq(-3,3,0.01)
+f<-function(x){(x+1)^2}
+y<-f(x)
+plot(x,y,las=1,xlab="x",ylab="f(x)",type="l",lwd=2)
+grid()
+points(x=-1,y=0,pch=2,lwd=3,col="red")
+```
+
+
+## Ejemplo 1D
+
+La derivada de la función $f$ es $f'\left(x\right)=2 \left(x+1\right)$ que se anula en $x=-1$.
+
+La segunda derivada de $f$ es $f''\left(x\right)=2>0$, por tanto $x=-1$ es un mínimo global.
+
+Esto también puede obtenerse con la función `optimize()`:
+
+```{r}
+f<-function(x){(x+1)^2}
+minimizacion<-optimize(f=f,interval=c(-5,5))
+print(minimizacion)
+```
+
+El parámetro `interval` indica el intervalo en el que se debe buscar la solución y representa nuestro conocimiento *a priori* del problema.
+
+## Ejemplo 1D
+
+¿Qué pasa si ahora solo aceptamos soluciones no negativas ($x\geq 0$) para el problema?
+
+La formulación sería la siguiente:
+
+```{r}
+minimizacion<-optimize(f=f,interval=c(0,5))
+print(minimizacion)
+```
+
+# Dimensiones superiores
+
+## Dimensiones superiores
+
+¿Qué pasa cuando nos movemos a una dimensión dónde no podemos visualizar la función objetivo?
+
+...Vayamos con calma y comencemos con un problema en $\mathbb{R}^2$
+
+## Ejemplo: [función de Rastrigin](https://en.wikipedia.org/wiki/Rastrigin_function)
+
+$f\left(x\right)=10n+\sum_{i=1}^{n}{x_i^2-10\cos(2 \pi x_i)}$, para $x_i \in \left(-5.12,5.12\right)$, $i=1,...,n$
+
+
+```{r echo=FALSE}
+rastrigin<-function(x){
+  f<-10*2+(x[1]^2-10*cos(2*pi*x[1]))+(x[2]^2-10*cos(2*pi*x[2]))
+  return(f)
+}
+x<-seq(-5.12,5.12,0.1)
+y<-x
+grilla<-expand.grid(x,y)
+names(grilla)<-c("x","y")
+grilla$z<-apply(grilla,1,rastrigin)
+Z<-matrix(grilla$z,ncol=length(x),nrow=length(y))
+```
+
+```{r echo=FALSE, message=FALSE}
+library(plotly)
+p <- plot_ly(x=x,y=y,z =Z,type="contour") 
+# p <- add_surface(p)
+p<-layout(p,title='Contornos de la función de Rastrigin en 2D',
+         xaxis=list(title="x"),
+         yaxis=list(title="y"))
+p
+```
+
+## Ejemplo: función de Rastrigin en 2D
+
+$f\left(x\right)=20+{x_1^2-10\cos(2 \pi x_1)}+{x_2^2-10\cos(2 \pi x_2)}$, para $x_i \in \left(-5.12,5.12\right)$, $i=1,2$
+
+```{r echo=FALSE, message=FALSE}
+library(plotly)
+p <- plot_ly(x=x,y=y,z =Z) 
+p <- add_surface(p)
+p<-layout(p,title='Función de Rastrigin en 2D',
+         xaxis=list(title="x"),
+         yaxis=list(title="y"))
+p
+```
+
+## Ejemplo: función de Rastrigin con `optim`
+
+```{r}
+# Definición de la función en 2D
+rastrigin<-function(x){
+  f<-10*2+(x[1]^2-10*cos(2*pi*x[1]))+(x[2]^2-10*cos(2*pi*x[2]))
+  return(f)
+}
+```
+
+```{r}
+# Optimización con descenso por gradiente:
+set.seed(1983)
+cond_ini<-runif(2,-5.12,5.12)
+rastrigin_opt<-optim(cond_ini,fn=rastrigin,method = "L-BFGS-B",
+                     lower=c(-5.12,-5.12),upper = c(5.12,5.12))
+```
+
+
+```{r echo=FALSE}
+# Tomado de https://stackoverflow.com/questions/50774908/overlaying-line-on-contour-plot-using-plotly
+trayectoria_optim<-sapply(1:14,function(i) optim(cond_ini,fn=rastrigin,method = "L-BFGS-B",
+                     lower=c(-5.12,-5.12),upper = c(5.12,5.12),control = list(maxit = i))$par)
+trayectoria_optim<-t(trayectoria_optim)
+trayectoria_optim<-rbind(cond_ini,trayectoria_optim)
+trayectoria_optim<-as.data.frame(trayectoria_optim)
+names(trayectoria_optim)<-c("x","y")
+```
+
+## Resultado con `optim`
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(plotly)
+p <- plot_ly(x=x,y=y,z =Z,type="contour") 
+p <- add_trace(p,type = "scatter", mode = "line",x=~x,y=~y,data=trayectoria_optim)
+p<-layout(p,title='Función de Rastrigin',
+         xaxis=list(title="x"),
+         yaxis=list(title="y"))
+p
+```
+
+## Conclusión con `optim`
+
+Los métodos convencionales, aunque rápidos (medidos en evaluaciones de la función objetivo) son sensibles a la condición inicial.
+
+Establecer la condición inicial requiere un conocimiento *a priori* importante del problema y puede ser difícil de establecer en dimensiones superiores.
+
+# Optimización no convencional
+
+## Optimización no convencional
+
+Se define como no convencional los métodos que no usan la derivada de la función objetivo.
+
+Ejemplos de estos métodos son [los algoritmos genéticos](https://en.wikipedia.org/wiki/Genetic_algorithm), [la evolución diferencial](https://en.wikipedia.org/wiki/Differential_evolution), [la inteligencia de ejambres de partículas](https://en.wikipedia.org/wiki/Particle_swarm_optimization), [las colonias de hormigas](https://en.wikipedia.org/wiki/Ant_colony_optimization_algorithms), entre otras.
+
+Estos métodos se inspiran en paradigmas del funcionamiento organismos naturales, como por ejemplo la selección natural y las sociedades de insectos.
+
+Exploraremos los [**algoritmos evolutivos**](https://en.wikipedia.org/wiki/Evolutionary_algorithm).
+
+## Algorimos evolutivos
+
+Se inspiran en el paradigma de la evolución natural y fueron propuestos por John Holland <footnote>HOLLAND, J. (1992): Adaptation In Natural and Artificial Systems. The University of Michigan Press, 2◦ edn.</footnote>
+
+```{r, tidy=FALSE, eval=FALSE, highlight=TRUE}
+1: Generación de la población inicial M(t)
+2: Evaluación M(t)
+3: repetir
+4:   t:=t+1
+5:   Selección de individuos de M(t)
+6:   Creación de la nueva población, M0(t), a partir de operaciones genéticas
+7:   M(t)=M0(t)
+8:   Evalúe M(t)
+9: hasta satisfacer un criterio de finalización
+```
+
+## Operaciones genéticas
+
+Un inidividuo es un vector $x^0=\left(x_1^0,x_2^0,...,x_p^0\right)^T$
+
+**Replicación**: $x^0 \to x^0$ Un individuo se copia tal cual a la siguiente generación
+
+**Mutación**: $x_j^0 \to x_j^0+\varepsilon$, con $j$ y $\varepsilon$ aleatorios. Una componente cualquiera de un individuo se perturba aleatoriamente.
+
+**Cruce**: $x^1=\left(x_1^1,x_2^1,...,x_{p-1}^1,x_p^1\right)^T$ y $x^2=\left(x_1^2,x_2^2,...,x_{p-1}^2,x_p^2\right)^T$ producen a $x^{12}=\left(x_1^1,x_2^1,...,x_{p-1}^2x_p^2\right)^T$ y a $x^{21}=\left(x_1^2,x_2^2,...,x_{p-1}^1x_p^1\right)^T$. Los individuos $x^1$ y $x^2$, así como el punto en el que se cortan, se escogen aleatoriamente. 
+
+Las proporciones de individuos que se replican, mutan y que se cruzan son los parámetros del algoritmo.
+
+## Selección de individuos
+
+La probabilidad de pasar a la siguiente generación (iteración) depende probabilísticamente de la aptitud (función objetivo)
+
+Los individuos con mejor valor de la función objetivo son los más aptos
+
+
+## Ejemplo: optimización de la función de rastrigin con `GA`
+
+La función `GA` está diseñada para maximizar, pero maximizar $f\left(x\right)$ es lo mismo que minimizar $-f\left(x\right)$
+
+```{r message=FALSE, warning=FALSE}
+library(GA)
+neg_rastrigin<-function(x){
+  return(-rastrigin(x))
+}
+rastrigin_ga<-ga(type="real-valued",
+                 fitness = neg_rastrigin,lower=c(-5.12,-5.12),
+                 upper = c(5.12,5.12))
+```
+
+## Ejemplo: Evolución del valor objetivo del mejor individuo, de la media y de la mediana de cada población
+```{r echo=FALSE}
+plot(rastrigin_ga)
+```
+
+
+## Accediendo a las poblaciones intermedias
+
+```{r message=FALSE, warning=FALSE}
+a<<-vector("list",1)
+rastrigin_ga<-ga(type="real-valued",
+                 fitness = neg_rastrigin,
+                 lower=c(-5.12,-5.12),
+                 upper = c(5.12,5.12),
+                 monitor=function(obj){
+                   a[[obj@iter]]<<-(obj@population)
+                   })
+```
+
+
+## Población generación 1:
+```{r echo=FALSE}
+contour(x,y,Z,xlab="x",ylab="y",drawlabels=FALSE,las=1)
+title("Distribución de la población en la generación 1")
+points(a[[1]],col="red",pch=16,cex=1.5)
+```
+
+## Población generación 25:
+```{r echo=FALSE}
+contour(x,y,Z,xlab="x",ylab="y",drawlabels=FALSE,las=1)
+title("Distribución de la población en la generación 25")
+points(a[[25]],col="red",pch=16,cex=1.5)
+```
+
+## Población generación 50:
+```{r echo=FALSE}
+contour(x,y,Z,xlab="x",ylab="y",drawlabels=FALSE,las=1)
+title("Distribución de la población en la generación 50")
+points(a[[50]],col="red",pch=16,cex=1.5)
+```
+
+## Población generación 75:
+```{r echo=FALSE}
+contour(x,y,Z,xlab="x",ylab="y",drawlabels=FALSE,las=1)
+title("Distribución de la población en la generación 75")
+points(a[[75]],col="red",pch=16,cex=1.5)
+```
+
+## Población generación 100:
+```{r echo=FALSE}
+contour(x,y,Z,xlab="x",ylab="y",drawlabels=FALSE,las=1)
+title("Distribución de la población en la generación 100")
+points(a[[100]],col="red",pch=16,cex=1.5)
+```
+
+## Usando la última solución de `GA` como solución inicial para `optim` 
+
+```{r message=FALSE, warning=FALSE}
+a<<-vector("list",1)
+rastrigin_ga<-ga(type="real-valued",
+                 fitness = neg_rastrigin,
+                 lower=c(-5.12,-5.12),upper = c(5.12,5.12),
+                 monitor=function(obj){a[[obj@iter]]<<-(obj@population)},optim = TRUE)
+```
+
+# Problemas combinatorios
+
+<!-- ## El vendedor viajero -->
+<!-- ¿Cuál es la mejor ruta para el [vendedor viajero](https://en.wikipedia.org/wiki/Travelling_salesman_problem)? -->
+
+<!-- ```{r warning=FALSE} -->
+<!-- library(TSP) -->
+<!-- library("maps") -->
+<!-- library("sp") -->
+<!-- library("maptools") -->
+<!-- data("USCA312") -->
+<!-- data("USCA312_map") -->
+<!-- ## plot map -->
+<!-- plot(as(USCA312_coords, "Spatial"), axes=TRUE) -->
+<!-- plot(USCA312_basemap, add=TRUE, col = "gray") -->
+<!-- points(USCA312_coords, pch=3, cex=0.4, col="black") -->
+<!-- ``` -->
+<!-- ## Formación de la función objetivo -->
+
+<!-- ```{r} -->
+<!-- M_dist<-matrix(0L,ncol=312,nrow=312) -->
+<!-- M_dist[lower.tri(M_dist)]<-as.integer(USCA312) -->
+<!-- M_dist<-M_dist+t(M_dist) -->
+<!-- set.seed(1452) -->
+<!-- recorrido<-sample(312) -->
+<!-- tour<-c(recorrido,recorrido[1]) -->
+<!-- costo<-sum(M_dist[cbind(tour[1:312],tour[2:313])]) -->
+<!-- f_obj<-function(recorrido,M){ -->
+<!--   tour<-c(recorrido,recorrido[1]) -->
+<!--   ruta <- embed(tour, 2)[, 2:1] -->
+<!--   costo<-sum(M[ruta]) -->
+<!--   return(1/costo) -->
+<!-- } -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- t1<-Sys.time() -->
+<!-- tour_ga<-ga(type="permutation",fitness=f_obj,M=M_dist,lower=rep(1,312),upper=rep(312,312),maxiter=10000) -->
+<!-- plot(tour_ga) -->
+<!-- t2<-Sys.time() -->
+<!-- print(t2-t1) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- tour<-as.TOUR(as.integer(tour_ga@solution)) -->
+<!-- # tour <- solve_TSP(USCA312) -->
+<!-- tour_line <- SpatialLines(list(Lines(list( -->
+<!--     Line(USCA312_coords[c(tour, tour[1]),])), ID="1"))) -->
+<!-- plot(as(USCA312_coords, "Spatial"), axes=TRUE) -->
+<!-- plot(USCA312_basemap, add=TRUE, col = "gray") -->
+<!-- plot(tour_line, add=TRUE, col = "red") -->
+<!-- points(USCA312_coords, pch=3, cex=0.4, col="black") -->
+<!-- ``` -->
+
+
+
+## El vendedor viajero
+¿Cuál es la mejor ruta para el [vendedor viajero](https://en.wikipedia.org/wiki/Travelling_salesman_problem)?
+
+10 ciudades, el costo de viajar de una ciudad a otra depende solo de su distancia
+
+```{r echo=FALSE}
+# Ejemplo tomado de http://rpubs.com/somasdhavala/GAeg
+set.seed(56) # Se fija la semilla para tener resultados reproducibles
+n<-10 # número de ciudades
+points<-runif(2*n) # Generación de coordenadas aleatorias
+points<-matrix(points,ncol=2) # Puntos en el plano
+M_dist<-as.matrix(dist(points)) # Se obtiene la matriz de distancia entre los puntos
+recorrido<-sample(n) # Ejemplo de un recorrido
+tour <- c(recorrido, recorrido[1]) # Ejemplo de un tour (se termina donde se comienza)
+route <- embed(recorrido, 2)[, 2:1]
+nombresciud<-paste0("C",1:10) # Nombres de las ciudades
+plot(points,xlab="x",ylab="y",axes=FALSE,xlim=c(0,0.8),ylim=c(0,1.2),lwd=2)
+title(main="Ciudades")
+text(points,labels=nombresciud,pos=4,cex=1.2)
+grid()
+```
+
+## El vendedor viajero
+
+Ejemplo de un recorrido
+
+```{r echo=FALSE}
+plot(points,xlab="x",ylab="y",axes=FALSE,xlim=c(0,0.8),ylim=c(0,1.2),lwd=2)
+title(main="Ciudades")
+text(points,labels=nombresciud,pos=4,cex=1.2)
+grid()
+lines(points[tour,1], points[tour,2], col = "red", lwd = 1)
+```
+
+## Recorridos con algoritmos genéticos
+
+[Solución con algoritmos genéticos](http://rpubs.com/somasdhavala/GAeg)
+
+```{r}
+# Función objetivo
+f_obj<-function(recorrido,M){
+  tour<-c(recorrido,recorrido[1])
+  ruta <- embed(tour, 2)[, 2:1]
+  costo<-sum(M[ruta])
+  return(1/costo) # para maximización
+}
+```
+
+```{r message=FALSE}
+tour_ga<-ga(type="permutation",fitness=f_obj,
+            M=M_dist,
+            lower=rep(1,10),upper=rep(10,10),
+            maxiter=100,monitor=FALSE)
+```
+
+## El vendedor viajero
+
+El mejor recorrido
+
+```{r echo=FALSE}
+tour<-c(tour_ga@solution,tour_ga@solution[1])
+plot(points,xlab="x",ylab="y",axes=FALSE,xlim=c(0,0.8),ylim=c(0,1.2),lwd=2)
+title(main="Ciudades")
+text(points,labels=nombresciud,pos=4,cex=1.2)
+grid()
+lines(points[tour,1], points[tour,2], col = "red", lwd = 1)
+```
+
+# Conclusiones
+
+## ¿Qué aprendimos?
+
+>- Existen métodos en R para resolver problemas de optimización que no usan la derivada
+>- Estos métodos evaluan muchas veces la función objetivo
+>- Se pueden complementar con métodos clásicos y tener lo mejor de dos mundos
+
+
+
+# Retos para el público
+
+## Incorpore restricciones dentro de una función
+
+Optimice una función [propuesta aquí](https://en.wikipedia.org/wiki/Test_functions_for_optimization) incorporando las restricciones dentro de la función, para 2D y 5D
+
+## El mejor recorrido en 20 ciudades
+
+Encuentre el mejor recorrido para 20 ciudades distribuidas aleatoriamente en el plano
+
+Muestre la evolución de los recorridos a medida que avanza el proceso de optimización
+
+
+
+
