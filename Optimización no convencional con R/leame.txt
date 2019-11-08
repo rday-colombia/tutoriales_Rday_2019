@@ -1,1 +1,1 @@
-La carpeta en la cual usted se encuentra sirve para que usted almacene todo el material necesario para el tutorial.
+En este repositorio se encuentra la presentación para el tutorial en optimización no convencional en el RdayMedellín 2019
